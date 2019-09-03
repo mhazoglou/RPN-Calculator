@@ -1,0 +1,14 @@
+[package]
+name = "rpn"
+version = "0.1.0"
+authors = ["Michael Hazoglou <michaelhazoglou@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+
+
+[profile.dev]
+opt-level = 0
+
+[profile.release]
+opt-level = 3
