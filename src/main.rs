@@ -39,13 +39,7 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
             handle_op_binary(stk, bin_closure)
         },
         Token::OpUnary(un_closure) => {
-            if stk.len() > 0 {
-                let x = stk.pop().unwrap();
-                stk.push(un_closure(x));
-            } else {
-                print!("You need at least one number in ");
-                println!("the stack to perform unary operations.");
-            }
+            handle_op_unary(stk, un_closure)
         }
         Token::Swap => {
             if stk.len() > 1 {
@@ -76,6 +70,16 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &Fn(f64) -> f64) -> () {
+    if stk.len() > 0 {
+        let x = stk.pop().unwrap();
+        stk.push(un_closure(x));
+    } else {
+        print!("You need at least one number in ");
+        println!("the stack to perform unary operations.");
+    }
 }
 
 fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &Fn(f64, f64) -> f64) -> () {
