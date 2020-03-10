@@ -32,7 +32,7 @@ fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
 }
 
 fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
-    let mut running = true;
+    let mut process_next_token = true;
     match x {
         Token::Number(num) => stk.push(num),
         Token::OpBinary(bin_closure) => {
@@ -77,12 +77,12 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
             stk.clear();
         },
         Token::Quit => {
-            running = false;
+            process_next_token = false;
         },
         Token::Invalid => println!("{} is an invalid input.", tk.trim()),
         _ => println!("What a beautiful Duwang!")
     }
-    return running;
+    return process_next_token;
 }
 
 pub enum Token<'a>
