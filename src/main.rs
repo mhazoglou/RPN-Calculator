@@ -57,12 +57,11 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
     return process_next_token;
 }
 
-fn handle_number(stk: &mut Vec<f64>, num: f64) -> () {
+fn handle_number(stk: &mut Vec<f64>, num: f64) {
     stk.push(num)
-
 }
 
-fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) -> () {
+fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) {
     if stk.len() > 1 {
         let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
         stk.push(bin_closure(x, y));
@@ -72,7 +71,7 @@ fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) -
     }
 }
 
-fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) -> () {
+fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) {
     if stk.len() > 0 {
         let x = stk.pop().unwrap();
         stk.push(un_closure(x));
@@ -82,7 +81,7 @@ fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) -> () {
     }
 }
 
-fn handle_swap(stk: &mut Vec<f64>) -> () {
+fn handle_swap(stk: &mut Vec<f64>) {
     if stk.len() > 1 {
         let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
         stk.push(y);
@@ -93,7 +92,7 @@ fn handle_swap(stk: &mut Vec<f64>) -> () {
     }
 }
 
-fn handle_del(stk: &mut Vec<f64>) -> () {
+fn handle_del(stk: &mut Vec<f64>) {
     if stk.len() > 0 {
         stk.pop();
     } else {
@@ -106,11 +105,11 @@ fn handle_clear(stk: &mut Vec<f64>) {
     stk.clear();
 }
 
-fn handle_invalid(tk: &str) -> () {
+fn handle_invalid(tk: &str) {
     println!("{} is an invalid input.", tk.trim())
 }
 
-fn handle_catch_all() -> () {
+fn handle_catch_all() {
     println!("What a beautiful Duwang!")
 }
 
