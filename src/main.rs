@@ -11,9 +11,7 @@ fn main() {
             println!("{:e}", el);
         }
 
-        let mut s = get_input();
-        running = process_input(&mut stk, &mut s);
-
+        running = process_input(&mut stk, &mut get_input());
     }
 }
 
