@@ -42,15 +42,7 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
             handle_op_unary(stk, un_closure)
         }
         Token::Swap => {
-            if stk.len() > 1 {
-                let (y, x) = (stk.pop().unwrap(),
-                              stk.pop().unwrap());
-                stk.push(y);
-                stk.push(x);
-            } else {
-                print!("You need at least two numbers in ");
-                println!("the stack to perform swap operation.");
-            }
+            handle_swap(stk)
         },
         Token::Del => {
             if stk.len() > 0 {
@@ -70,6 +62,18 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_swap(stk: &mut Vec<f64>) -> () {
+    if stk.len() > 1 {
+        let (y, x) = (stk.pop().unwrap(),
+                      stk.pop().unwrap());
+        stk.push(y);
+        stk.push(x);
+    } else {
+        print!("You need at least two numbers in ");
+        println!("the stack to perform swap operation.");
+    }
 }
 
 fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &Fn(f64) -> f64) -> () {
