@@ -1,6 +1,5 @@
 use std::io;
 mod token_matcher;
-use token_matcher::Token;
 fn main() {
     println!("Type \"exit\" or \"quit\" to quit");
     let mut stk: Vec<f64> = vec![];
@@ -32,8 +31,7 @@ fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
     let mut continue_processing = true;
 
     for tk in s.split_whitespace() {
-        let x = Token::new(&tk[..]);
-        continue_processing = token_matcher::match_token(stk, tk, x);
+        continue_processing = token_matcher::match_token(stk, tk);
         if !continue_processing {
             break;
         }

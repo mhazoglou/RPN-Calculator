@@ -1,6 +1,7 @@
 use std::{f64::consts, f64::NAN};
 
-pub(crate) fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
+pub(crate) fn match_token(stk: &mut Vec<f64>, tk: &str) -> bool {
+    let x = Token::new(&tk[..]);
     let mut process_next_token = true;
     match x {
         Token::Number(num) => handle_number(stk, num),
