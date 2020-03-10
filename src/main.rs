@@ -92,7 +92,7 @@ fn handle_swap(stk: &mut Vec<f64>) -> () {
     }
 }
 
-fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &Fn(f64) -> f64) -> () {
+fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) -> () {
     if stk.len() > 0 {
         let x = stk.pop().unwrap();
         stk.push(un_closure(x));
@@ -102,7 +102,7 @@ fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &Fn(f64) -> f64) -> () {
     }
 }
 
-fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &Fn(f64, f64) -> f64) -> () {
+fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) -> () {
     if stk.len() > 1 {
         let (y, x) = (stk.pop().unwrap(),
                       stk.pop().unwrap());
