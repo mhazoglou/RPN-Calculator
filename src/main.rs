@@ -25,56 +25,62 @@ fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
 
     for tk in s.split_whitespace() {
         let x = Token::new(&tk[..]);
+        running = match_token(stk, tk, x);
+        if !running{break}
+    }
+    return running;
+}
 
-        match x {
-            Token::Number(num) => stk.push(num),
-            Token::OpBinary(bin_closure) => {
-                if stk.len() > 1 {
-                    let (y, x) = (stk.pop().unwrap(),
-                                  stk.pop().unwrap());
-                    stk.push(bin_closure(x, y));
-                } else {
-                    print!("You need at least two numbers in ");
-                    println!("the stack to perform binary operations.");
-                }
-            },
-            Token::OpUnary(un_closure) => {
-                if stk.len() > 0 {
-                    let x = stk.pop().unwrap();
-                    stk.push(un_closure(x));
-                } else {
-                    print!("You need at least one number in ");
-                    println!("the stack to perform unary operations.");
-                }
+fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
+    let mut running = true;
+    match x {
+        Token::Number(num) => stk.push(num),
+        Token::OpBinary(bin_closure) => {
+            if stk.len() > 1 {
+                let (y, x) = (stk.pop().unwrap(),
+                              stk.pop().unwrap());
+                stk.push(bin_closure(x, y));
+            } else {
+                print!("You need at least two numbers in ");
+                println!("the stack to perform binary operations.");
             }
-            Token::Swap => {
-                if stk.len() > 1 {
-                    let (y, x) = (stk.pop().unwrap(),
-                                  stk.pop().unwrap());
-                    stk.push(y);
-                    stk.push(x);
-                } else {
-                    print!("You need at least two numbers in ");
-                    println!("the stack to perform swap operation.");
-                }
-            },
-            Token::Del => {
-                if stk.len() > 0 {
-                    stk.pop();
-                } else {
-                    print!("You need at least one number ");
-                    println!("in stack to perform delete operation.");
-                }
-            },
-            Token::Clear => {
-                stk.clear();
-            },
-            Token::Quit => {
-                running = false;
-            },
-            Token::Invalid => println!("{} is an invalid input.", tk.trim()),
-            _ => println!("What a beautiful Duwang!")
+        },
+        Token::OpUnary(un_closure) => {
+            if stk.len() > 0 {
+                let x = stk.pop().unwrap();
+                stk.push(un_closure(x));
+            } else {
+                print!("You need at least one number in ");
+                println!("the stack to perform unary operations.");
+            }
         }
+        Token::Swap => {
+            if stk.len() > 1 {
+                let (y, x) = (stk.pop().unwrap(),
+                              stk.pop().unwrap());
+                stk.push(y);
+                stk.push(x);
+            } else {
+                print!("You need at least two numbers in ");
+                println!("the stack to perform swap operation.");
+            }
+        },
+        Token::Del => {
+            if stk.len() > 0 {
+                stk.pop();
+            } else {
+                print!("You need at least one number ");
+                println!("in stack to perform delete operation.");
+            }
+        },
+        Token::Clear => {
+            stk.clear();
+        },
+        Token::Quit => {
+            running = false;
+        },
+        Token::Invalid => println!("{} is an invalid input.", tk.trim()),
+        _ => println!("What a beautiful Duwang!")
     }
     return running;
 }
