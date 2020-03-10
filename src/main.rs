@@ -10,68 +10,73 @@ fn main() {
         for el in stk.iter() {
             println!("{:e}", el);
         }
-        
+
         let mut s = String::new();
 		io::stdin().read_line(&mut s)
 			.expect("Failed to read line");
-        
-        for tk in s.split_whitespace() {
-            let x = Token::new(&tk[..]);
-            
-            match x {
-                Token::Number(num) => stk.push(num),
-                Token::OpBinary(bin_closure) => {
-                    if stk.len() > 1 {
-                        let (y, x) = (stk.pop().unwrap(), 
-                                      stk.pop().unwrap());
-                        stk.push(bin_closure(x, y));
-                    } else {
-                        print!("You need at least two numbers in ");
-                        println!("the stack to perform binary operations.");
-                    }
-                },
-                Token::OpUnary(un_closure) => {
-                    if stk.len() > 0 {
-                        let x = stk.pop().unwrap();
-                        stk.push(un_closure(x));
-                    } else {
-                        print!("You need at least one number in ");
-                        println!("the stack to perform unary operations.");
-                    }
-                }
-                Token::Swap => {
-                    if stk.len() > 1 {
-                        let (y, x) = (stk.pop().unwrap(), 
-                                      stk.pop().unwrap());
-                        stk.push(y);
-                        stk.push(x);
-                    } else {
-                        print!("You need at least two numbers in ");
-                        println!("the stack to perform swap operation.");
-                    }
-                },
-                Token::Del => {
-                    if stk.len() > 0 {
-                        stk.pop();
-                    } else {
-                        print!("You need at least one number ");
-                        println!("in stack to perform delete operation.");
-                    }
-                },
-                Token::Clear => {
-                    stk.clear();
-                },
-                Token::Quit => {
-                    running = false;
-                    break;
-                },
-                Token::Invalid => println!("{} is an invalid input.", tk.trim()),
-                _ => println!("What a beautiful Duwang!")
-            }
-        }
-        
+
+        running = process_input(&mut stk, &mut s);
+
     }
-  
+}
+
+fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
+    let mut running = true;
+
+    for tk in s.split_whitespace() {
+        let x = Token::new(&tk[..]);
+
+        match x {
+            Token::Number(num) => stk.push(num),
+            Token::OpBinary(bin_closure) => {
+                if stk.len() > 1 {
+                    let (y, x) = (stk.pop().unwrap(),
+                                  stk.pop().unwrap());
+                    stk.push(bin_closure(x, y));
+                } else {
+                    print!("You need at least two numbers in ");
+                    println!("the stack to perform binary operations.");
+                }
+            },
+            Token::OpUnary(un_closure) => {
+                if stk.len() > 0 {
+                    let x = stk.pop().unwrap();
+                    stk.push(un_closure(x));
+                } else {
+                    print!("You need at least one number in ");
+                    println!("the stack to perform unary operations.");
+                }
+            }
+            Token::Swap => {
+                if stk.len() > 1 {
+                    let (y, x) = (stk.pop().unwrap(),
+                                  stk.pop().unwrap());
+                    stk.push(y);
+                    stk.push(x);
+                } else {
+                    print!("You need at least two numbers in ");
+                    println!("the stack to perform swap operation.");
+                }
+            },
+            Token::Del => {
+                if stk.len() > 0 {
+                    stk.pop();
+                } else {
+                    print!("You need at least one number ");
+                    println!("in stack to perform delete operation.");
+                }
+            },
+            Token::Clear => {
+                stk.clear();
+            },
+            Token::Quit => {
+                running = false;
+            },
+            Token::Invalid => println!("{} is an invalid input.", tk.trim()),
+            _ => println!("What a beautiful Duwang!")
+        }
+    }
+    return running;
 }
 
 pub enum Token<'a>
@@ -92,7 +97,7 @@ impl<'a> Token<'a> {
 			Ok(num) => num,
 			Err(_) => NAN,
 		};
-        
+
         if x.is_nan() {
             return match &s.trim()[..] {
                 // Binary operations
@@ -141,7 +146,7 @@ impl<'a> Token<'a> {
                 // quiting
                 "quit" => Token::Quit,
                 "exit" => Token::Quit,
-                // delete 
+                // delete
                 "delete" => Token::Del,
                 "del"    => Token::Del,
                 // clear all
