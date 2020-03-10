@@ -6,12 +6,15 @@ fn main() {
     let mut stk: Vec<f64> = vec!();
     let mut running = true;
     while running {
-        println!("\nStack:");
-        for el in stk.iter() {
-            println!("{:e}", el);
-        }
-
+        print_stack_contents(&mut stk);
         running = process_input(&mut stk, &mut get_input());
+    }
+}
+
+fn print_stack_contents(stk: &mut Vec<f64>) {
+    println!("\nStack:");
+    for el in stk.iter() {
+        println!("{:e}", el);
     }
 }
 
