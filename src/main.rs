@@ -48,7 +48,7 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
             handle_del(stk)
         },
         Token::Clear => {
-            stk.clear();
+            handle_clear(stk);
         },
         Token::Quit => {
             process_next_token = false;
@@ -57,6 +57,10 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_clear(stk: &mut Vec<f64>) {
+    stk.clear();
 }
 
 fn handle_del(stk: &mut Vec<f64>) -> () {
