@@ -11,13 +11,17 @@ fn main() {
             println!("{:e}", el);
         }
 
-        let mut s = String::new();
-		io::stdin().read_line(&mut s)
-			.expect("Failed to read line");
-
+        let mut s = get_input();
         running = process_input(&mut stk, &mut s);
 
     }
+}
+
+fn get_input() -> String {
+    let mut s = String::new();
+    io::stdin().read_line(&mut s)
+        .expect("Failed to read line");
+    return s;
 }
 
 fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
