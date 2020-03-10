@@ -6,11 +6,11 @@ fn main() {
     let mut stk: Vec<f64> = vec![];
     let mut running = true;
     while running {
-        running = serve_calculator(&mut stk);
+        running = run_calculator(&mut stk);
     }
 }
 
-fn serve_calculator(mut stk: &mut Vec<f64>) -> bool {
+fn run_calculator(mut stk: &mut Vec<f64>) -> bool {
     print_stack_contents(&mut stk);
     return process_input(&mut stk, &mut get_input());
 }
