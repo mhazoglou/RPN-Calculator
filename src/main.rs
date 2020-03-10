@@ -34,7 +34,7 @@ fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
 fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
     let mut process_next_token = true;
     match x {
-        Token::Number(num) => stk.push(num),
+        Token::Number(num) => handle_number(stk, num),
         Token::OpBinary(bin_closure) => {
             if stk.len() > 1 {
                 let (y, x) = (stk.pop().unwrap(),
@@ -83,6 +83,10 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_number(stk: &mut Vec<f64>, num: f64) -> () {
+    stk.push(num)
 }
 
 pub enum Token<'a>
