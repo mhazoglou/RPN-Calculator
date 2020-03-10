@@ -1,4 +1,5 @@
-#[path = "./token.rs"] mod token;
+#[path = "./token.rs"]
+mod token;
 use token::Token;
 
 pub(crate) fn match_token(stk: &mut Vec<f64>, tk: &str) -> bool {
