@@ -21,14 +21,14 @@ fn main() {
 }
 
 fn process_input(stk: &mut Vec<f64>, s: &mut String) -> bool {
-    let mut running = true;
+    let mut continue_processing = true;
 
     for tk in s.split_whitespace() {
         let x = Token::new(&tk[..]);
-        running = match_token(stk, tk, x);
-        if !running{break}
+        continue_processing = match_token(stk, tk, x);
+        if !continue_processing {break}
     }
-    return running;
+    return continue_processing;
 }
 
 fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
