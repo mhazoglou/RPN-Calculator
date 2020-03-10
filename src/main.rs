@@ -53,10 +53,14 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         Token::Quit => {
             process_next_token = false;
         },
-        Token::Invalid => println!("{} is an invalid input.", tk.trim()),
+        Token::Invalid => handle_invalid(tk),
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_invalid(tk: &str) -> () {
+    println!("{} is an invalid input.", tk.trim())
 }
 
 fn handle_clear(stk: &mut Vec<f64>) {
