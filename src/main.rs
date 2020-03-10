@@ -45,12 +45,7 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
             handle_swap(stk)
         },
         Token::Del => {
-            if stk.len() > 0 {
-                stk.pop();
-            } else {
-                print!("You need at least one number ");
-                println!("in stack to perform delete operation.");
-            }
+            handle_del(stk)
         },
         Token::Clear => {
             stk.clear();
@@ -62,6 +57,15 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_del(stk: &mut Vec<f64>) -> () {
+    if stk.len() > 0 {
+        stk.pop();
+    } else {
+        print!("You need at least one number ");
+        println!("in stack to perform delete operation.");
+    }
 }
 
 fn handle_swap(stk: &mut Vec<f64>) -> () {
