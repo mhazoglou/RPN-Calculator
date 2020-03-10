@@ -58,7 +58,7 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
 }
 
 fn handle_number(stk: &mut Vec<f64>, num: f64) {
-    stk.push(num)
+    stk.push(num);
 }
 
 fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) {
@@ -106,11 +106,11 @@ fn handle_clear(stk: &mut Vec<f64>) {
 }
 
 fn handle_invalid(tk: &str) {
-    println!("{} is an invalid input.", tk.trim())
+    println!("{} is an invalid input.", tk.trim());
 }
 
 fn handle_catch_all() {
-    println!("What a beautiful Duwang!")
+    println!("What a beautiful Duwang!");
 }
 
 pub enum Token<'a> {
