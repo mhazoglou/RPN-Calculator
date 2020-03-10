@@ -57,24 +57,28 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
     return process_next_token;
 }
 
-fn handle_catch_all() -> () {
-    println!("What a beautiful Duwang!")
+fn handle_number(stk: &mut Vec<f64>, num: f64) -> () {
+    stk.push(num)
+
 }
 
-fn handle_invalid(tk: &str) -> () {
-    println!("{} is an invalid input.", tk.trim())
-}
-
-fn handle_clear(stk: &mut Vec<f64>) {
-    stk.clear();
-}
-
-fn handle_del(stk: &mut Vec<f64>) -> () {
-    if stk.len() > 0 {
-        stk.pop();
+fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) -> () {
+    if stk.len() > 1 {
+        let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
+        stk.push(bin_closure(x, y));
     } else {
-        print!("You need at least one number ");
-        println!("in stack to perform delete operation.");
+        print!("You need at least two numbers in ");
+        println!("the stack to perform binary operations.");
+    }
+}
+
+fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) -> () {
+    if stk.len() > 0 {
+        let x = stk.pop().unwrap();
+        stk.push(un_closure(x));
+    } else {
+        print!("You need at least one number in ");
+        println!("the stack to perform unary operations.");
     }
 }
 
@@ -89,28 +93,25 @@ fn handle_swap(stk: &mut Vec<f64>) -> () {
     }
 }
 
-fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) -> () {
+fn handle_del(stk: &mut Vec<f64>) -> () {
     if stk.len() > 0 {
-        let x = stk.pop().unwrap();
-        stk.push(un_closure(x));
+        stk.pop();
     } else {
-        print!("You need at least one number in ");
-        println!("the stack to perform unary operations.");
+        print!("You need at least one number ");
+        println!("in stack to perform delete operation.");
     }
 }
 
-fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) -> () {
-    if stk.len() > 1 {
-        let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
-        stk.push(bin_closure(x, y));
-    } else {
-        print!("You need at least two numbers in ");
-        println!("the stack to perform binary operations.");
-    }
+fn handle_clear(stk: &mut Vec<f64>) {
+    stk.clear();
 }
 
-fn handle_number(stk: &mut Vec<f64>, num: f64) -> () {
-    stk.push(num)
+fn handle_invalid(tk: &str) -> () {
+    println!("{} is an invalid input.", tk.trim())
+}
+
+fn handle_catch_all() -> () {
+    println!("What a beautiful Duwang!")
 }
 
 pub enum Token<'a> {
