@@ -49,12 +49,8 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         Token::OpUnary(un_closure) => handle_op_unary(stk, un_closure),
         Token::Swap => handle_swap(stk),
         Token::Del => handle_del(stk),
-        Token::Clear => {
-            handle_clear(stk);
-        }
-        Token::Quit => {
-            process_next_token = false;
-        }
+        Token::Clear => handle_clear(stk),
+        Token::Quit => process_next_token = false,
         Token::Invalid => handle_invalid(tk),
         _ => handle_catch_all(),
     }
