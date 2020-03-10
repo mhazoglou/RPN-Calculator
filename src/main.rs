@@ -54,9 +54,13 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
             process_next_token = false;
         },
         Token::Invalid => handle_invalid(tk),
-        _ => println!("What a beautiful Duwang!")
+        _ => handle_catch_all()
     }
     return process_next_token;
+}
+
+fn handle_catch_all() -> () {
+    println!("What a beautiful Duwang!")
 }
 
 fn handle_invalid(tk: &str) -> () {
