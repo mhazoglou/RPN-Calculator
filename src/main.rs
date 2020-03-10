@@ -36,14 +36,7 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
     match x {
         Token::Number(num) => handle_number(stk, num),
         Token::OpBinary(bin_closure) => {
-            if stk.len() > 1 {
-                let (y, x) = (stk.pop().unwrap(),
-                              stk.pop().unwrap());
-                stk.push(bin_closure(x, y));
-            } else {
-                print!("You need at least two numbers in ");
-                println!("the stack to perform binary operations.");
-            }
+            handle_op_binary(stk, bin_closure)
         },
         Token::OpUnary(un_closure) => {
             if stk.len() > 0 {
@@ -83,6 +76,17 @@ fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> bool {
         _ => println!("What a beautiful Duwang!")
     }
     return process_next_token;
+}
+
+fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &Fn(f64, f64) -> f64) -> () {
+    if stk.len() > 1 {
+        let (y, x) = (stk.pop().unwrap(),
+                      stk.pop().unwrap());
+        stk.push(bin_closure(x, y));
+    } else {
+        print!("You need at least two numbers in ");
+        println!("the stack to perform binary operations.");
+    }
 }
 
 fn handle_number(stk: &mut Vec<f64>, num: f64) -> () {
