@@ -3,11 +3,152 @@ use std::{f64::consts, f64::NAN};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+pub struct SessionManager {
+    map: RefCell<HashMap<String, Session>>,
+    current_session: RefCell<String>
+}
 
-pub struct Session {
+impl SessionManager {
+    pub fn new() -> SessionManager {
+        let mut map = HashMap::new();
+        
+        let current_session = String::from("default");
+        
+        map.insert(current_session.clone(), 
+                   Session::new());
+        
+        SessionManager {
+            map: RefCell::new(map),
+            current_session: RefCell::new(current_session)
+        }
+    }
+    
+    fn add_new_session(&self, s: String) {
+        let new_session = Session::new();
+        self.map.borrow_mut().entry(s).or_insert(new_session);
+    }
+    
+    fn change_current_session(&self, s: String) {
+        if self.map.borrow().contains_key(&s) {
+            let mut current_session = self.current_session.borrow_mut();
+            *current_session = s;
+        } else {
+            print!("Session {} was not created", s);
+            println!(" please create by entering new:{}", s);
+        }
+    }
+    
+    fn print_stack(&self) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow()[&*s].print_stack();
+    }
+    
+    fn print_history(&self) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow()[&*s].print_history();
+    }
+    
+    fn clear_history(&self) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].clear_history();
+    }
+    
+    pub fn run_manager(&self) {
+        println!("Type \"exit\" or \"quit\" to quit");
+        let mut running = true;
+        while running {
+            self.print_stack();
+            running = self.process_input();
+            
+        }
+    }
+    
+    fn process_input(&self) -> bool {
+        let mut running = true;
+        let mut s = String::new();
+        io::stdin().read_line(&mut s).expect("Failed to read line");
+
+        for tk in s.split_whitespace() {
+            running = self.match_token(tk);
+            if !running {
+                break;
+            }
+            
+        }
+        
+        self.push_to_history(s);
+        
+        running
+    }
+    
+    fn push_to_stack(&self, num: &f64) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].push_to_stack(num);
+    }
+    
+    fn push_to_history(&self, string: String) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].push_to_history(string);
+    }
+    
+    fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].op_binary(bin_closure);
+    }
+    
+    fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].op_unary(un_closure);
+    }
+    
+    fn swap(&self) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].swap();
+    }
+    
+    fn del(&self) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].del();
+    }
+    
+    fn clear_stack(&self) {
+        let s = self.current_session.borrow(); // borrow ref
+        self.map.borrow_mut()[&*s].clear_stack();
+    }
+    
+    fn match_token(&self, tk: &str) -> bool {
+        let mut running = true;
+        // let current_session = self.current_session.borrow(); // borrow ref
+        // let session = &self.map.borrow_mut()[&*current_session];
+        let x = Token::new(&tk[..]);
+        
+        
+        match x {
+            Token::Number(num) => self.push_to_stack(&num),
+            Token::OpBinary(bin_closure) => self.op_binary(bin_closure),
+            Token::OpUnary(un_closure) => self.op_unary(un_closure),
+            Token::Swap => self.swap(),
+            Token::Del => self.del(),
+            Token::ClearStack => self.clear_stack(),
+            Token::NewSession(s) => self.add_new_session(s.to_string()),
+            Token::ChangeSession(s) => self.change_current_session(s.to_string()),
+            Token::History => self.print_history(),
+            Token::ClearHistory => self.clear_history(),
+            Token::Quit => running = false,
+            Token::Invalid => println!("{} is an invalid input.", tk),
+            _ => println!("What a beautiful Duwang!"),
+        }
+        
+        running
+    }
+}
+
+
+struct Session {
     stack: RefCell<Vec<f64>>,
     history: RefCell<Vec<String>>
 }
+
 
 impl Session {
     pub fn new() -> Session {
@@ -17,192 +158,109 @@ impl Session {
         }
     }
     
-    fn update(self:&Self) -> Vec<Output> {
-        let s = get_input();
-        self.history.borrow_mut().push(s.clone());
-        
-        process_input(&mut self.stack.borrow_mut(), &s[..])
+    pub fn push_to_stack(&self, num: &f64) {
+        self.stack.borrow_mut().push(*num);
     }
     
-    pub fn run_session(self:&Self) -> Vec<Output> {
-        print_stack_contents(&self.stack.borrow());
-        self.update()
+    pub fn push_to_history(&self, s: String) {
+        self.history.borrow_mut().push(s);
     }
-    
-    pub fn print_history(self:&Self) {
-        println!("History:");
-        for s in self.history.borrow().iter() {
-            print!("{}", *s);
+
+    fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
+        let mut stk = self.stack.borrow_mut();
+        if stk.len() > 1 {
+            let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
+            stk.push(bin_closure(x, y));
+        } else {
+            print!("You need at least two numbers in ");
+            println!("the stack to perform binary operations.");
         }
     }
+
+    fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
+        let mut stk = self.stack.borrow_mut();
+        if stk.len() > 0 {
+            let x = stk.pop().unwrap();
+            stk.push(un_closure(x));
+        } else {
+            print!("You need at least one number in ");
+            println!("the stack to perform unary operations.");
+        }
+    }
+
+    fn swap(&self) {
+        let mut stk = self.stack.borrow_mut();
+        if stk.len() > 1 {
+            let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
+            stk.push(y);
+            stk.push(x);
+        } else {
+            print!("You need at least two numbers in ");
+            println!("the stack to perform swap operation.");
+        }
+    }
+
+    fn del(&self) {
+        let mut stk = self.stack.borrow_mut();
+        if stk.len() > 0 {
+            stk.pop();
+        } else {
+            print!("You need at least one number ");
+            println!("in stack to perform delete operation.");
+        }
+    }
+
+    fn clear_stack(&self) {
+        let mut stk = self.stack.borrow_mut();
+        stk.clear();
+    }
+    
+    // fn run_session(&self) -> Vec<Output> {
+        // print_stack_contents(&self.stack.borrow());
+        // self.update()
+    // }
+    
+    fn print_history(&self) {
+        println!("History:");
+        for s in self.history.borrow().iter() {
+            println!("{}", *s);
+        }
+    }
+    
+    fn clear_history(&self) {
+        self.history.borrow_mut().clear();
+    }
+    
+    fn print_stack(&self) {
+        println!("\nStack:");
+        for el in self.stack.borrow().iter() {
+            println!("{:e}", el);
+        }
+        //println!("\x1b[{}F", stk.len() as u32 + 3);
+    }
+    
     /*
-    pub fn save(self:&Self) {
+    pub fn save(&self) {
         
     }*/
 }
 
-// pub fn run_calculator(mut stk: &mut Vec<f64>) -> Output {
-    // print_stack_contents(&stk);
-    // return process_input(&mut stk, &get_input());
-// }
 
-fn print_stack_contents(stk: &Vec<f64>) {
-    println!("\nStack:");
-    for el in stk.iter() {
-        println!("{:e}", el);
-    }
-    //println!("\x1b[{}F", stk.len() as u32 + 3);
-}
-
-fn get_input() -> String {
-    let mut s = String::new();
-    io::stdin().read_line(&mut s).expect("Failed to read line");
-    
-    s
-}
-
-fn process_input(stk: &mut Vec<f64>, s: &str) -> Vec<Output> {
-    let mut outputs: Vec<Output> = Vec::new();
-
-    for tk in s.split_whitespace() {
-        let x = Token::new(&tk[..]);
-        let output = match_token(stk, tk, x);
-        let running = output.running;
-        outputs.push(output);
-        if !running {
-            break;
-        }
-        
-    }
-    
-    outputs
-}
-
-fn match_token(stk: &mut Vec<f64>, tk: &str, x: Token) -> Output {
-    let mut running = true;
-    let mut new_session = false;
-    let mut change_session = false;
-    let mut session_name = String::new();
-    let mut print_hist = false;
-    match x {
-        Token::Number(num) => handle_number(stk, &num),
-        Token::OpBinary(bin_closure) => handle_op_binary(stk, bin_closure),
-        Token::OpUnary(un_closure) => handle_op_unary(stk, un_closure),
-        Token::Swap => handle_swap(stk),
-        Token::Del => handle_del(stk),
-        Token::Clear => handle_clear(stk),
-        Token::NewSession(s) => {
-            new_session = true;
-            session_name = String::from(s);
-        },
-        Token::ChangeSession(s) => {
-            change_session = true;
-            session_name = String::from(s);},
-        Token::History => print_hist = true,
-        Token::Quit => running = false,
-        Token::Invalid => handle_invalid(tk),
-        _ => handle_catch_all(),
-    }
-    
-    Output {
-        running,
-        new_session,
-        change_session,
-        session_name,
-        print_hist
-    }
-}
-
-fn handle_number(stk: &mut Vec<f64>, num: &f64) {
-    stk.push(*num);
-}
-
-fn handle_op_binary(stk: &mut Vec<f64>, bin_closure: &dyn Fn(f64, f64) -> f64) {
-    if stk.len() > 1 {
-        let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
-        stk.push(bin_closure(x, y));
-    } else {
-        print!("You need at least two numbers in ");
-        println!("the stack to perform binary operations.");
-    }
-}
-
-fn handle_op_unary(stk: &mut Vec<f64>, un_closure: &dyn Fn(f64) -> f64) {
-    if stk.len() > 0 {
-        let x = stk.pop().unwrap();
-        stk.push(un_closure(x));
-    } else {
-        print!("You need at least one number in ");
-        println!("the stack to perform unary operations.");
-    }
-}
-
-fn handle_swap(stk: &mut Vec<f64>) {
-    if stk.len() > 1 {
-        let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
-        stk.push(y);
-        stk.push(x);
-    } else {
-        print!("You need at least two numbers in ");
-        println!("the stack to perform swap operation.");
-    }
-}
-
-fn handle_del(stk: &mut Vec<f64>) {
-    if stk.len() > 0 {
-        stk.pop();
-    } else {
-        print!("You need at least one number ");
-        println!("in stack to perform delete operation.");
-    }
-}
-
-fn handle_clear(stk: &mut Vec<f64>) {
-    stk.clear();
-}
-
-fn handle_invalid(tk: &str) {
-    println!("{} is an invalid input.", tk.trim());
-}
-
-fn handle_catch_all() {
-    println!("What a beautiful Duwang!");
-}
-
-
-pub struct Output {
-    pub running: bool,
-    pub new_session: bool,
-    pub change_session: bool,
-    pub session_name: String,
-    pub print_hist: bool
-}
-
-impl Output {
-    pub fn new() -> Output {
-        Output {
-            running: true,
-            new_session: false,
-            change_session: false,
-            session_name: String::new(),
-            print_hist: false,
-        }
-    }
-}
-
-pub enum Token<'a> {
+enum Token<'a> {
     Number(f64),
     OpBinary(&'a dyn Fn(f64, f64) -> f64),
     OpUnary(&'a dyn Fn(f64) -> f64),
     Del,
-    Clear,
+    ClearStack,
     Swap,
     Invalid,
     NewSession(&'a str),
     ChangeSession(&'a str),
     History,
+    ClearHistory,
     Quit
 }
+
 
 impl<'a> Token<'a> {
     pub fn new(s: &str) -> Token {
@@ -260,16 +318,19 @@ impl<'a> Token<'a> {
                 // delete
                 ["delete"] => Token::Del,
                 ["del"] => Token::Del,
-                // clear all
-                ["clear"] => Token::Clear,
+                // clear all elements in current stack
+                ["clear"] => Token::ClearStack,
                 // swap
                 ["swap"] => Token::Swap,
                 // new session
                 ["new", s] => Token::NewSession(s),
                 // change session
                 ["change_to", s] => Token::ChangeSession(s),
-                //
+                ["go_to", s] => Token::ChangeSession(s),
+                // print history for current session
                 ["hist"] => Token::History,
+                // clear history of current session
+                ["hist_clear"] => Token::ClearHistory,
                 // everything else
                 _ => Token::Invalid,
             };
