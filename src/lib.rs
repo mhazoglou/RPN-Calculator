@@ -47,13 +47,13 @@ impl SessionManager {
     }
     
     fn print_stack(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow()[&*s].print_stack();
+        get_sess!(self, sess);
+        sess.print_stack();
     }
     
     fn print_history(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow()[&*s].print_history();
+        get_sess!(self, sess);
+        sess.print_history();
     }
     
     fn clear_history(&self) {
