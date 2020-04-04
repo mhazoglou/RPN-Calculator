@@ -3,6 +3,14 @@ use std::{f64::consts, f64::NAN};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+macro_rules! get_sess{
+    ($sess_man:ident, $sess:ident) => (
+        let s = &*$sess_man.current_session.borrow(); // borrow ref
+        let map = $sess_man.map.borrow();
+        let $sess = &map[s];
+    );
+}
+
 pub struct SessionManager {
     map: RefCell<HashMap<String, Session>>,
     current_session: RefCell<String>
