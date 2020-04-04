@@ -18,6 +18,7 @@ macro_rules! get_sess_mut{
         let $sess = &map[s];
     );
 }
+
 pub struct SessionManager {
     map: RefCell<HashMap<String, Session>>,
     current_session: RefCell<String>
@@ -28,7 +29,7 @@ impl SessionManager {
         let mut map = HashMap::new();
         
         let current_session = String::from("default");
-        
+
         map.insert(current_session.clone(), 
                    Session::new());
         
@@ -62,22 +63,22 @@ impl SessionManager {
         get_sess!(self, sess);
         sess.print_history();
     }
-    
+
     fn clear_history(&self) {
         get_sess_mut!(self, sess);
         sess.clear_history();
     }
-    
+
     pub fn run_manager(&self) {
         println!("Type \"exit\" or \"quit\" to quit");
         let mut running = true;
         while running {
             self.print_stack();
             running = self.process_input();
-            
+
         }
     }
-    
+
     fn process_input(&self) -> bool {
         let mut running = true;
         let mut s = String::new();
@@ -88,44 +89,44 @@ impl SessionManager {
             if !running {
                 break;
             }
-            
+
         }
-        
+
         self.push_to_history(s);
-        
+
         running
     }
-    
+
     fn push_to_stack(&self, num: &f64) {
         get_sess_mut!(self, sess);
         sess.push_to_stack(num);
     }
-    
+
     fn push_to_history(&self, string: String) {
         get_sess_mut!(self, sess);
         sess.push_to_history(string);
     }
-    
+
     fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
         get_sess_mut!(self, sess);
         sess.op_binary(bin_closure);
     }
-    
+
     fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
         get_sess_mut!(self, sess);
         sess.op_unary(un_closure);
     }
-    
+
     fn swap(&self) {
         get_sess_mut!(self, sess);
         sess.swap();
     }
-    
+
     fn del(&self) {
         get_sess_mut!(self, sess);
         sess.del();
     }
-    
+
     fn clear_stack(&self) {
         get_sess_mut!(self, sess);
         sess.clear_stack();
@@ -133,11 +134,7 @@ impl SessionManager {
     
     fn match_token(&self, tk: &str) -> bool {
         let mut running = true;
-        // let current_session = self.current_session.borrow(); // borrow ref
-        // let session = &self.map.borrow_mut()[&*current_session];
         let x = Token::new(&tk[..]);
-        
-        
         match x {
             Token::Number(num) => self.push_to_stack(&num),
             Token::OpBinary(bin_closure) => self.op_binary(bin_closure),
