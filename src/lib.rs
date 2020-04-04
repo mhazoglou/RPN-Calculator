@@ -11,6 +11,13 @@ macro_rules! get_sess{
     );
 }
 
+macro_rules! get_sess_mut{
+    ($sess_man:ident, $sess:ident) => (
+        let s = &*$sess_man.current_session.borrow(); // borrow ref
+        let map = $sess_man.map.borrow_mut();
+        let $sess = &map[s];
+    );
+}
 pub struct SessionManager {
     map: RefCell<HashMap<String, Session>>,
     current_session: RefCell<String>
