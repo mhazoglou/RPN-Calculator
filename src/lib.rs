@@ -64,8 +64,8 @@ impl SessionManager {
     }
     
     fn clear_history(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].clear_history();
+        get_sess_mut!(self, sess);
+        sess.clear_history();
     }
     
     pub fn run_manager(&self) {
@@ -97,38 +97,38 @@ impl SessionManager {
     }
     
     fn push_to_stack(&self, num: &f64) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].push_to_stack(num);
+        get_sess_mut!(self, sess);
+        sess.push_to_stack(num);
     }
     
     fn push_to_history(&self, string: String) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].push_to_history(string);
+        get_sess_mut!(self, sess);
+        sess.push_to_history(string);
     }
     
     fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].op_binary(bin_closure);
+        get_sess_mut!(self, sess);
+        sess.op_binary(bin_closure);
     }
     
     fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].op_unary(un_closure);
+        get_sess_mut!(self, sess);
+        sess.op_unary(un_closure);
     }
     
     fn swap(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].swap();
+        get_sess_mut!(self, sess);
+        sess.swap();
     }
     
     fn del(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].del();
+        get_sess_mut!(self, sess);
+        sess.del();
     }
     
     fn clear_stack(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].clear_stack();
+        get_sess_mut!(self, sess);
+        sess.clear_stack();
     }
     
     fn match_token(&self, tk: &str) -> bool {
