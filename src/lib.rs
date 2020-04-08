@@ -3,6 +3,22 @@ use std::{f64::consts, f64::NAN};
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+macro_rules! get_sess{
+    ($sess_man:ident, $sess:ident) => (
+        let s = &*$sess_man.current_session.borrow(); // borrow ref
+        let map = $sess_man.map.borrow();
+        let $sess = &map[s];
+    );
+}
+
+macro_rules! get_sess_mut{
+    ($sess_man:ident, $sess:ident) => (
+        let s = &*$sess_man.current_session.borrow(); // borrow ref
+        let map = $sess_man.map.borrow_mut();
+        let $sess = &map[s];
+    );
+}
+
 pub struct SessionManager {
     map: RefCell<HashMap<String, Session>>,
     current_session: RefCell<String>
@@ -13,7 +29,7 @@ impl SessionManager {
         let mut map = HashMap::new();
         
         let current_session = String::from("default");
-        
+
         map.insert(current_session.clone(), 
                    Session::new());
         
@@ -39,30 +55,30 @@ impl SessionManager {
     }
     
     fn print_stack(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow()[&*s].print_stack();
+        get_sess!(self, sess);
+        sess.print_stack();
     }
     
     fn print_history(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow()[&*s].print_history();
+        get_sess!(self, sess);
+        sess.print_history();
     }
-    
+
     fn clear_history(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].clear_history();
+        get_sess_mut!(self, sess);
+        sess.clear_history();
     }
-    
+
     pub fn run_manager(&self) {
         println!("Type \"exit\" or \"quit\" to quit");
         let mut running = true;
         while running {
             self.print_stack();
             running = self.process_input();
-            
+
         }
     }
-    
+
     fn process_input(&self) -> bool {
         let mut running = true;
         let mut s = String::new();
@@ -73,56 +89,52 @@ impl SessionManager {
             if !running {
                 break;
             }
-            
+
         }
-        
+
         self.push_to_history(s);
-        
+
         running
     }
-    
+
     fn push_to_stack(&self, num: &f64) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].push_to_stack(num);
+        get_sess_mut!(self, sess);
+        sess.push_to_stack(num);
     }
-    
+
     fn push_to_history(&self, string: String) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].push_to_history(string);
+        get_sess_mut!(self, sess);
+        sess.push_to_history(string);
     }
-    
+
     fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].op_binary(bin_closure);
+        get_sess_mut!(self, sess);
+        sess.op_binary(bin_closure);
     }
-    
+
     fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].op_unary(un_closure);
+        get_sess_mut!(self, sess);
+        sess.op_unary(un_closure);
     }
-    
+
     fn swap(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].swap();
+        get_sess_mut!(self, sess);
+        sess.swap();
     }
-    
+
     fn del(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].del();
+        get_sess_mut!(self, sess);
+        sess.del();
     }
-    
+
     fn clear_stack(&self) {
-        let s = self.current_session.borrow(); // borrow ref
-        self.map.borrow_mut()[&*s].clear_stack();
+        get_sess_mut!(self, sess);
+        sess.clear_stack();
     }
     
     fn match_token(&self, tk: &str) -> bool {
         let mut running = true;
-        // let current_session = self.current_session.borrow(); // borrow ref
-        // let session = &self.map.borrow_mut()[&*current_session];
         let x = Token::new(&tk[..]);
-        
-        
         match x {
             Token::Number(num) => self.push_to_stack(&num),
             Token::OpBinary(bin_closure) => self.op_binary(bin_closure),
@@ -215,11 +227,6 @@ impl Session {
         stk.clear();
     }
     
-    // fn run_session(&self) -> Vec<Output> {
-        // print_stack_contents(&self.stack.borrow());
-        // self.update()
-    // }
-    
     fn print_history(&self) {
         println!("History:");
         for s in self.history.borrow().iter() {
@@ -234,7 +241,12 @@ impl Session {
     fn print_stack(&self) {
         println!("\nStack:");
         for el in self.stack.borrow().iter() {
-            println!("{:e}", el);
+            // 0 is weird print 0e0
+            if ((el.abs() >= 1e6) || (el.abs() < 1e-3)) && (*el != 0.) {
+                println!("{:e}", el);
+            } else {
+                println!("{}", el);
+            }
         }
         //println!("\x1b[{}F", stk.len() as u32 + 3);
     }
@@ -242,7 +254,8 @@ impl Session {
     /*
     pub fn save(&self) {
         
-    }*/
+    }
+    */
 }
 
 
@@ -293,7 +306,7 @@ impl<'a> Token<'a> {
                 ["exp"] => Token::OpUnary(&|x| x.exp()),
                 ["ln"] => Token::OpUnary(&|x| x.ln()),
                 ["log2"] => Token::OpUnary(&|x| x.log2()),
-                ["log10"] => Token::OpUnary(&|x| x.log2()),
+                ["log10"] => Token::OpUnary(&|x| x.log10()),
                 ["sin"] => Token::OpUnary(&|x| x.sin()),
                 ["asin"] => Token::OpUnary(&|x| x.asin()),
                 ["cos"] => Token::OpUnary(&|x| x.cos()),
