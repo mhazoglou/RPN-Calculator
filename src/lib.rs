@@ -1,49 +1,48 @@
-use std::io;
-use std::{f64::consts, f64::NAN};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::io;
+use std::{f64::consts, f64::NAN};
 
-macro_rules! get_sess{
-    ($sess_man:ident, $sess:ident) => (
+macro_rules! get_sess {
+    ($sess_man:ident, $sess:ident) => {
         let s = &*$sess_man.current_session.borrow(); // borrow ref
         let map = $sess_man.map.borrow();
         let $sess = &map[s];
-    );
+    };
 }
 
-macro_rules! get_sess_mut{
-    ($sess_man:ident, $sess:ident) => (
+macro_rules! get_sess_mut {
+    ($sess_man:ident, $sess:ident) => {
         let s = &*$sess_man.current_session.borrow(); // borrow ref
         let map = $sess_man.map.borrow_mut();
         let $sess = &map[s];
-    );
+    };
 }
 
 pub struct SessionManager {
     map: RefCell<HashMap<String, Session>>,
-    current_session: RefCell<String>
+    current_session: RefCell<String>,
 }
 
 impl SessionManager {
     pub fn new() -> SessionManager {
         let mut map = HashMap::new();
-        
+
         let current_session = String::from("default");
 
-        map.insert(current_session.clone(), 
-                   Session::new());
-        
+        map.insert(current_session.clone(), Session::new());
+
         SessionManager {
             map: RefCell::new(map),
-            current_session: RefCell::new(current_session)
+            current_session: RefCell::new(current_session),
         }
     }
-    
+
     fn add_new_session(&self, s: String) {
         let new_session = Session::new();
         self.map.borrow_mut().entry(s).or_insert(new_session);
     }
-    
+
     fn change_current_session(&self, s: String) {
         if self.map.borrow().contains_key(&s) {
             let mut current_session = self.current_session.borrow_mut();
@@ -53,12 +52,13 @@ impl SessionManager {
             println!(" please create by entering new:{}", s);
         }
     }
-    
+
     fn print_stack(&self) {
+        print!("\nCurrent Session: {}", self.current_session.borrow());
         get_sess!(self, sess);
         sess.print_stack();
     }
-    
+
     fn print_history(&self) {
         get_sess!(self, sess);
         sess.print_history();
@@ -75,7 +75,6 @@ impl SessionManager {
         while running {
             self.print_stack();
             running = self.process_input();
-
         }
     }
 
@@ -89,7 +88,6 @@ impl SessionManager {
             if !running {
                 break;
             }
-
         }
 
         self.push_to_history(s);
@@ -132,6 +130,21 @@ impl SessionManager {
         sess.clear_stack();
     }
     
+    fn print_session_names(&self) {
+        println!("\nSessions:");
+        for key in self.map.borrow().keys() {
+            println!("{}", key);
+        }
+    }
+    
+    fn remove_session(&self, session_name: &str) {
+        if session_name == "default" {
+            println!("The default session cannot be deleted.");
+        } else {
+            self.map.borrow_mut().remove(session_name);
+        }
+    }
+
     fn match_token(&self, tk: &str) -> bool {
         let mut running = true;
         let x = Token::new(&tk[..]);
@@ -144,36 +157,36 @@ impl SessionManager {
             Token::ClearStack => self.clear_stack(),
             Token::NewSession(s) => self.add_new_session(s.to_string()),
             Token::ChangeSession(s) => self.change_current_session(s.to_string()),
+            Token::RemoveSession(s) => self.remove_session(s),
+            Token::PrintSessions => self.print_session_names(),
             Token::History => self.print_history(),
             Token::ClearHistory => self.clear_history(),
             Token::Quit => running = false,
             Token::Invalid => println!("{} is an invalid input.", tk),
             _ => println!("What a beautiful Duwang!"),
         }
-        
+
         running
     }
 }
 
-
 struct Session {
     stack: RefCell<Vec<f64>>,
-    history: RefCell<Vec<String>>
+    history: RefCell<Vec<String>>,
 }
-
 
 impl Session {
     pub fn new() -> Session {
         Session {
             stack: RefCell::new(vec![]),
-            history: RefCell::new(vec![])
+            history: RefCell::new(vec![]),
         }
     }
-    
+
     pub fn push_to_stack(&self, num: &f64) {
         self.stack.borrow_mut().push(*num);
     }
-    
+
     pub fn push_to_history(&self, s: String) {
         self.history.borrow_mut().push(s);
     }
@@ -226,22 +239,21 @@ impl Session {
         let mut stk = self.stack.borrow_mut();
         stk.clear();
     }
-    
+
     fn print_history(&self) {
         println!("History:");
         for s in self.history.borrow().iter() {
             println!("{}", *s);
         }
     }
-    
+
     fn clear_history(&self) {
         self.history.borrow_mut().clear();
     }
-    
+
     fn print_stack(&self) {
         println!("\nStack:");
         for el in self.stack.borrow().iter() {
-            // 0 is weird print 0e0
             if ((el.abs() >= 1e6) || (el.abs() < 1e-3)) && (*el != 0.) {
                 println!("{:e}", el);
             } else {
@@ -250,15 +262,16 @@ impl Session {
         }
         //println!("\x1b[{}F", stk.len() as u32 + 3);
     }
-    
+
     /*
+    // add a way to save sessions
     pub fn save(&self) {
-        
+
     }
     */
 }
 
-
+// add print session names
 enum Token<'a> {
     Number(f64),
     OpBinary(&'a dyn Fn(f64, f64) -> f64),
@@ -269,11 +282,12 @@ enum Token<'a> {
     Invalid,
     NewSession(&'a str),
     ChangeSession(&'a str),
+    PrintSessions,
+    RemoveSession(&'a str),
     History,
     ClearHistory,
-    Quit
+    Quit,
 }
-
 
 impl<'a> Token<'a> {
     pub fn new(s: &str) -> Token {
@@ -340,6 +354,11 @@ impl<'a> Token<'a> {
                 // change session
                 ["change_to", s] => Token::ChangeSession(s),
                 ["go_to", s] => Token::ChangeSession(s),
+                ["goto", s] => Token::ChangeSession(s),
+                // remove a session
+                ["rm", s] => Token::RemoveSession(s),
+                // print sessions
+                ["sess"] => Token::PrintSessions,
                 // print history for current session
                 ["hist"] => Token::History,
                 // clear history of current session
