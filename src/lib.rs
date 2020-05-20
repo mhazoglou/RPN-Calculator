@@ -119,6 +119,11 @@ impl SessionManager {
         get_sess_mut!(self, sess);
         sess.swap();
     }
+    
+    fn cyclic_permutation(&self) {
+        get_sess_mut!(self, sess);
+        sess.cyclic_permutation();
+    }
 
     fn del(&self) {
         get_sess_mut!(self, sess);
@@ -129,18 +134,20 @@ impl SessionManager {
         get_sess_mut!(self, sess);
         sess.clear_stack();
     }
-    
+
     fn print_session_names(&self) {
         println!("\nSessions:");
         for key in self.map.borrow().keys() {
             println!("{}", key);
         }
     }
-    
+
     fn remove_session(&self, session_name: &str) {
         if session_name == "default" {
             println!("The default session cannot be deleted.");
-        } else {
+        } else if session_name == *self.current_session.borrow() {
+            println!("The current session cannot be deleted.");
+        }else {
             self.map.borrow_mut().remove(session_name);
         }
     }
@@ -153,6 +160,7 @@ impl SessionManager {
             Token::OpBinary(bin_closure) => self.op_binary(bin_closure),
             Token::OpUnary(un_closure) => self.op_unary(un_closure),
             Token::Swap => self.swap(),
+            Token::Cycle => self.cyclic_permutation(),
             Token::Del => self.del(),
             Token::ClearStack => self.clear_stack(),
             Token::NewSession(s) => self.add_new_session(s.to_string()),
@@ -224,6 +232,17 @@ impl Session {
             println!("the stack to perform swap operation.");
         }
     }
+    
+    fn cyclic_permutation(&self) {
+        let mut stk = self.stack.borrow_mut();
+        if stk.len() > 1 {
+            let x = stk.pop().unwrap();
+            stk.insert(0, x);
+        } else {
+            print!("You need at least two numbers in ");
+            println!("the stack to perform cyclic permutation operation.");
+        }
+    }
 
     fn del(&self) {
         let mut stk = self.stack.borrow_mut();
@@ -279,6 +298,7 @@ enum Token<'a> {
     Del,
     ClearStack,
     Swap,
+    Cycle,
     Invalid,
     NewSession(&'a str),
     ChangeSession(&'a str),
@@ -349,6 +369,9 @@ impl<'a> Token<'a> {
                 ["clear"] => Token::ClearStack,
                 // swap
                 ["swap"] => Token::Swap,
+                // cyclic permutation
+                ["cyc"] => Token::Cycle,
+                ["cycle"] => Token::Cycle,
                 // new session
                 ["new", s] => Token::NewSession(s),
                 // change session
