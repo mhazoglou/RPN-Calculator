@@ -120,9 +120,9 @@ impl SessionManager {
         sess.swap();
     }
     
-    fn cyclic_permutation(&self) {
+    fn cyclic_permutation(&self, num: i32) {
         get_sess_mut!(self, sess);
-        sess.cyclic_permutation();
+        sess.cyclic_permutation(num);
     }
 
     fn del(&self) {
@@ -160,7 +160,7 @@ impl SessionManager {
             Token::OpBinary(bin_closure) => self.op_binary(bin_closure),
             Token::OpUnary(un_closure) => self.op_unary(un_closure),
             Token::Swap => self.swap(),
-            Token::Cycle => self.cyclic_permutation(),
+            Token::CyclicPermutation(num) => self.cyclic_permutation(num),
             Token::Del => self.del(),
             Token::ClearStack => self.clear_stack(),
             Token::NewSession(s) => self.add_new_session(s.to_string()),
@@ -233,11 +233,21 @@ impl Session {
         }
     }
     
-    fn cyclic_permutation(&self) {
+    fn cyclic_permutation(&self, num: i32) {
         let mut stk = self.stack.borrow_mut();
         if stk.len() > 1 {
-            let x = stk.pop().unwrap();
-            stk.insert(0, x);
+            
+            if num >= 0 {
+                for _ in 0..(num) {
+                    let x = stk.pop().unwrap();
+                    stk.insert(0, x);
+                }
+            } else {
+                for _ in 0..(num.abs()) {
+                    let x = stk.remove(0);
+                    stk.push(x);
+                }
+            }
         } else {
             print!("You need at least two numbers in ");
             println!("the stack to perform cyclic permutation operation.");
@@ -298,7 +308,7 @@ enum Token<'a> {
     Del,
     ClearStack,
     Swap,
-    Cycle,
+    CyclicPermutation(i32),
     Invalid,
     NewSession(&'a str),
     ChangeSession(&'a str),
@@ -370,8 +380,20 @@ impl<'a> Token<'a> {
                 // swap
                 ["swap"] => Token::Swap,
                 // cyclic permutation
-                ["cyc"] => Token::Cycle,
-                ["cycle"] => Token::Cycle,
+                ["cyc"] => Token::CyclicPermutation(1),
+                ["cycle"] => Token::CyclicPermutation(1),
+                ["cyc", s] => {
+                    match s.trim().parse::<i32>() {
+                        Ok(num) => Token::CyclicPermutation(num),
+                        Err(_) => Token::Invalid,
+                    }
+                },
+                ["cycle", s] => {
+                    match s.trim().parse::<i32>() {
+                        Ok(num) => Token::CyclicPermutation(num),
+                        Err(_) => Token::Invalid,
+                    }
+                },
                 // new session
                 ["new", s] => Token::NewSession(s),
                 // change session
