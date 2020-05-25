@@ -3,19 +3,44 @@ use std::collections::HashMap;
 use std::io;
 use std::{f64::consts, f64::NAN};
 
-macro_rules! get_sess {
-    ($sess_man:ident, $sess:ident) => {
-        let s = &*$sess_man.current_session.borrow(); // borrow ref
-        let map = $sess_man.map.borrow();
-        let $sess = &map[s];
+macro_rules! get_sess_method {
+    ($method_name:ident) => {
+        fn $method_name(&self) {
+            let s = &*self.current_session.borrow(); // borrow ref
+            let map = self.map.borrow();
+            let sess = &map[s];
+            sess.$method_name()
+        }
+    };
+    
+    ($method_name:ident; $($args:ident: $ty:ty),*) => {
+        fn $method_name(&self, $($args: $ty),*) {
+            let s = &*self.current_session.borrow(); // borrow ref
+            let map = self.map.borrow();
+            let sess = &map[s];
+            sess.$method_name($($args),*)
+        }
     };
 }
 
-macro_rules! get_sess_mut {
-    ($sess_man:ident, $sess:ident) => {
-        let s = &*$sess_man.current_session.borrow(); // borrow ref
-        let map = $sess_man.map.borrow_mut();
-        let $sess = &map[s];
+macro_rules! get_sess_method_mut {
+    ($method_name:ident) => {
+        
+        fn $method_name(&self) {
+            let s = &*self.current_session.borrow(); // borrow ref
+            let map = self.map.borrow_mut();
+            let sess = &map[s];
+            sess.$method_name()
+        }
+    };
+    ($method_name:ident; $($args:ident: $ty:ty),*) => {
+        
+        fn $method_name(&self, $($args: $ty),*) {
+            let s = &*self.current_session.borrow(); // borrow ref
+            let map = self.map.borrow_mut();
+            let sess = &map[s];
+            sess.$method_name($($args),*)
+        }
     };
 }
 
@@ -38,41 +63,11 @@ impl SessionManager {
         }
     }
 
-    fn add_new_session(&self, s: String) {
-        let new_session = Session::new();
-        self.map.borrow_mut().entry(s).or_insert(new_session);
-    }
-
-    fn change_current_session(&self, s: String) {
-        if self.map.borrow().contains_key(&s) {
-            let mut current_session = self.current_session.borrow_mut();
-            *current_session = s;
-        } else {
-            print!("Session {} was not created", s);
-            println!(" please create by entering new:{}", s);
-        }
-    }
-
-    fn print_stack(&self) {
-        print!("\nCurrent Session: {}", self.current_session.borrow());
-        get_sess!(self, sess);
-        sess.print_stack();
-    }
-
-    fn print_history(&self) {
-        get_sess!(self, sess);
-        sess.print_history();
-    }
-
-    fn clear_history(&self) {
-        get_sess_mut!(self, sess);
-        sess.clear_history();
-    }
-
     pub fn run_manager(&self) {
         println!("Type \"exit\" or \"quit\" to quit");
         let mut running = true;
         while running {
+            print!("\nCurrent Session: {}", self.current_session.borrow());
             self.print_stack();
             running = self.process_input();
         }
@@ -95,63 +90,6 @@ impl SessionManager {
         running
     }
 
-    fn push_to_stack(&self, num: &f64) {
-        get_sess_mut!(self, sess);
-        sess.push_to_stack(num);
-    }
-
-    fn push_to_history(&self, string: String) {
-        get_sess_mut!(self, sess);
-        sess.push_to_history(string);
-    }
-
-    fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
-        get_sess_mut!(self, sess);
-        sess.op_binary(bin_closure);
-    }
-
-    fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
-        get_sess_mut!(self, sess);
-        sess.op_unary(un_closure);
-    }
-
-    fn swap(&self) {
-        get_sess_mut!(self, sess);
-        sess.swap();
-    }
-    
-    fn cyclic_permutation(&self, num: i32) {
-        get_sess_mut!(self, sess);
-        sess.cyclic_permutation(num);
-    }
-
-    fn del(&self) {
-        get_sess_mut!(self, sess);
-        sess.del();
-    }
-
-    fn clear_stack(&self) {
-        get_sess_mut!(self, sess);
-        sess.clear_stack();
-    }
-
-    fn print_session_names(&self) {
-        println!("\nSessions:");
-        for key in self.map.borrow().keys() {
-            println!("{}", key);
-        }
-    }
-
-    fn remove_session(&self, session_name: &str) {
-        if session_name == "default" {
-            println!("The default session cannot be deleted.");
-        } else if session_name == *self.current_session.borrow() {
-            println!("The current session cannot be deleted.");
-        }else {
-            self.map.borrow_mut().remove(session_name);
-        }
-    }
-
     fn match_token(&self, tk: &str) -> bool {
         let mut running = true;
         let x = Token::new(&tk[..]);
@@ -160,7 +98,7 @@ impl SessionManager {
             Token::OpBinary(bin_closure) => self.op_binary(bin_closure),
             Token::OpUnary(un_closure) => self.op_unary(un_closure),
             Token::Swap => self.swap(),
-            Token::CyclicPermutation(num) => self.cyclic_permutation(num),
+            Token::CyclicPermutation(num) => self.cyclic_permutation(&num),
             Token::Del => self.del(),
             Token::ClearStack => self.clear_stack(),
             Token::NewSession(s) => self.add_new_session(s.to_string()),
@@ -176,6 +114,60 @@ impl SessionManager {
 
         running
     }
+
+    fn add_new_session(&self, s: String) {
+        let new_session = Session::new();
+        self.map.borrow_mut().entry(s).or_insert(new_session);
+    }
+
+    fn change_current_session(&self, s: String) {
+        if self.map.borrow().contains_key(&s) {
+            let mut current_session = self.current_session.borrow_mut();
+            *current_session = s;
+        } else {
+            print!("Session {} was not created", s);
+            println!(" please create by entering new:{}", s);
+        }
+    }
+
+    fn print_session_names(&self) {
+        println!("\nSessions:");
+        for key in self.map.borrow().keys() {
+            println!("{}", key);
+        }
+    }
+
+    fn remove_session(&self, session_name: &str) {
+        if session_name == "default" {
+            println!("The default session cannot be deleted.");
+        } else if session_name == *self.current_session.borrow() {
+            println!("The current session cannot be deleted.");
+        } else {
+            self.map.borrow_mut().remove(session_name);
+        }
+    }
+    
+    get_sess_method!(print_stack);
+    
+    get_sess_method!(print_history);
+    
+    get_sess_method!(clear_history);
+    
+    get_sess_method_mut!(push_to_stack; num: &f64);
+    
+    get_sess_method_mut!(push_to_history; string: String);
+
+    get_sess_method_mut!(op_binary; bin_closure: &dyn Fn(f64, f64) -> f64);
+
+    get_sess_method_mut!(op_unary; un_closure: &dyn Fn(f64) -> f64);
+
+    get_sess_method_mut!(swap);
+
+    get_sess_method_mut!(cyclic_permutation; num: &i32);
+
+    get_sess_method_mut!(del);
+
+    get_sess_method_mut!(clear_stack);
 }
 
 struct Session {
@@ -184,18 +176,18 @@ struct Session {
 }
 
 impl Session {
-    pub fn new() -> Session {
+    fn new() -> Session {
         Session {
             stack: RefCell::new(vec![]),
             history: RefCell::new(vec![]),
         }
     }
 
-    pub fn push_to_stack(&self, num: &f64) {
+    fn push_to_stack(&self, num: &f64) {
         self.stack.borrow_mut().push(*num);
     }
 
-    pub fn push_to_history(&self, s: String) {
+    fn push_to_history(&self, s: String) {
         self.history.borrow_mut().push(s);
     }
 
@@ -232,13 +224,12 @@ impl Session {
             println!("the stack to perform swap operation.");
         }
     }
-    
-    fn cyclic_permutation(&self, num: i32) {
+
+    fn cyclic_permutation(&self, num: &i32) {
         let mut stk = self.stack.borrow_mut();
         if stk.len() > 1 {
-            
-            if num >= 0 {
-                for _ in 0..(num) {
+            if *num >= 0 {
+                for _ in 0..(*num) {
                     let x = stk.pop().unwrap();
                     stk.insert(0, x);
                 }
@@ -270,7 +261,7 @@ impl Session {
     }
 
     fn print_history(&self) {
-        println!("History:");
+        println!("\nHistory:");
         for s in self.history.borrow().iter() {
             println!("{}", *s);
         }
@@ -300,7 +291,6 @@ impl Session {
     */
 }
 
-// add print session names
 enum Token<'a> {
     Number(f64),
     OpBinary(&'a dyn Fn(f64, f64) -> f64),
@@ -382,17 +372,13 @@ impl<'a> Token<'a> {
                 // cyclic permutation
                 ["cyc"] => Token::CyclicPermutation(1),
                 ["cycle"] => Token::CyclicPermutation(1),
-                ["cyc", s] => {
-                    match s.trim().parse::<i32>() {
-                        Ok(num) => Token::CyclicPermutation(num),
-                        Err(_) => Token::Invalid,
-                    }
+                ["cyc", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::CyclicPermutation(num),
+                    Err(_) => Token::Invalid,
                 },
-                ["cycle", s] => {
-                    match s.trim().parse::<i32>() {
-                        Ok(num) => Token::CyclicPermutation(num),
-                        Err(_) => Token::Invalid,
-                    }
+                ["cycle", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::CyclicPermutation(num),
+                    Err(_) => Token::Invalid,
                 },
                 // new session
                 ["new", s] => Token::NewSession(s),

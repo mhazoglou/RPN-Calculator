@@ -85,5 +85,5 @@ Division `/`
 
 Modulo `%`
 
-Raising to the power of `^` or `pow`
+Power of `^` or `pow`
 
