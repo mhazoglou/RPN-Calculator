@@ -12,7 +12,7 @@ macro_rules! get_sess_method {
             sess.$method_name()
         }
     };
-    
+
     ($method_name:ident; $($args:ident: $ty:ty),*) => {
         fn $method_name(&self, $($args: $ty),*) {
             let s = &*self.current_session.borrow(); // borrow ref
@@ -25,7 +25,7 @@ macro_rules! get_sess_method {
 
 macro_rules! get_sess_method_mut {
     ($method_name:ident) => {
-        
+
         fn $method_name(&self) {
             let s = &*self.current_session.borrow(); // borrow ref
             let map = self.map.borrow_mut();
@@ -34,7 +34,7 @@ macro_rules! get_sess_method_mut {
         }
     };
     ($method_name:ident; $($args:ident: $ty:ty),*) => {
-        
+
         fn $method_name(&self, $($args: $ty),*) {
             let s = &*self.current_session.borrow(); // borrow ref
             let map = self.map.borrow_mut();
@@ -107,6 +107,7 @@ impl SessionManager {
             Token::PrintSessions => self.print_session_names(),
             Token::History => self.print_history(),
             Token::ClearHistory => self.clear_history(),
+            Token::Undo(num) => self.undo(&num),
             Token::Quit => running = false,
             Token::Invalid => println!("{} is an invalid input.", tk),
             _ => println!("What a beautiful Duwang!"),
@@ -146,33 +147,26 @@ impl SessionManager {
             self.map.borrow_mut().remove(session_name);
         }
     }
-    
+
     get_sess_method!(print_stack);
-    
     get_sess_method!(print_history);
-    
     get_sess_method!(clear_history);
-    
     get_sess_method_mut!(push_to_stack; num: &f64);
-    
     get_sess_method_mut!(push_to_history; string: String);
-
     get_sess_method_mut!(op_binary; bin_closure: &dyn Fn(f64, f64) -> f64);
-
     get_sess_method_mut!(op_unary; un_closure: &dyn Fn(f64) -> f64);
-
     get_sess_method_mut!(swap);
-
     get_sess_method_mut!(cyclic_permutation; num: &i32);
-
     get_sess_method_mut!(del);
-
     get_sess_method_mut!(clear_stack);
+    get_sess_method_mut!(undo; num: &i32);
 }
 
 struct Session {
     stack: RefCell<Vec<f64>>,
     history: RefCell<Vec<String>>,
+    states: RefCell<Vec<Vec<f64>>>,
+    undone_states: RefCell<Vec<Vec<f64>>>,
 }
 
 impl Session {
@@ -180,11 +174,26 @@ impl Session {
         Session {
             stack: RefCell::new(vec![]),
             history: RefCell::new(vec![]),
+            states: RefCell::new(vec![vec![]]),
+            undone_states: RefCell::new(vec![]),
         }
     }
-
+    
+    fn update_states(&self) {
+        self.states.borrow_mut().push(self.stack.borrow().clone());
+        let mut undone = self.undone_states.borrow_mut();
+        
+        if undone.len() > 0 {
+            undone.clear();
+        }
+    }
+    
     fn push_to_stack(&self, num: &f64) {
-        self.stack.borrow_mut().push(*num);
+        {
+            let mut stk = self.stack.borrow_mut();
+            stk.push(*num);
+        }
+        self.update_states();
     }
 
     fn push_to_history(&self, s: String) {
@@ -192,72 +201,90 @@ impl Session {
     }
 
     fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
-        let mut stk = self.stack.borrow_mut();
-        if stk.len() > 1 {
-            let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
-            stk.push(bin_closure(x, y));
-        } else {
-            print!("You need at least two numbers in ");
-            println!("the stack to perform binary operations.");
+        {
+            let mut stk = self.stack.borrow_mut();
+            if stk.len() > 1 {
+                let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
+                stk.push(bin_closure(x, y));
+            } else {
+                print!("You need at least two numbers in ");
+                println!("the stack to perform binary operations.");
+            }
         }
+        self.update_states();
     }
 
     fn op_unary(&self, un_closure: &dyn Fn(f64) -> f64) {
-        let mut stk = self.stack.borrow_mut();
-        if stk.len() > 0 {
-            let x = stk.pop().unwrap();
-            stk.push(un_closure(x));
-        } else {
-            print!("You need at least one number in ");
-            println!("the stack to perform unary operations.");
+        {
+            let mut stk = self.stack.borrow_mut();
+            if stk.len() > 0 {
+                let x = stk.pop().unwrap();
+                stk.push(un_closure(x));
+            } else {
+                print!("You need at least one number in ");
+                println!("the stack to perform unary operations.");
+            }
         }
+        self.update_states();
     }
 
     fn swap(&self) {
-        let mut stk = self.stack.borrow_mut();
-        if stk.len() > 1 {
-            let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
-            stk.push(y);
-            stk.push(x);
-        } else {
-            print!("You need at least two numbers in ");
-            println!("the stack to perform swap operation.");
+        {
+            let mut stk = self.stack.borrow_mut();
+            if stk.len() > 1 {
+                let (y, x) = (stk.pop().unwrap(), stk.pop().unwrap());
+                stk.push(y);
+                stk.push(x);
+            } else {
+                print!("You need at least two numbers in ");
+                println!("the stack to perform swap operation.");
+            }
         }
+        self.update_states();
     }
 
     fn cyclic_permutation(&self, num: &i32) {
-        let mut stk = self.stack.borrow_mut();
-        if stk.len() > 1 {
-            if *num >= 0 {
-                for _ in 0..(*num) {
-                    let x = stk.pop().unwrap();
-                    stk.insert(0, x);
+        {
+            let mut stk = self.stack.borrow_mut();
+            if stk.len() > 1 {
+                if *num >= 0 {
+                    for _ in 0..(*num) {
+                        let x = stk.pop().unwrap();
+                        stk.insert(0, x);
+                    }
+                } else {
+                    for _ in 0..(num.abs()) {
+                        let x = stk.remove(0);
+                        stk.push(x);
+                    }
                 }
             } else {
-                for _ in 0..(num.abs()) {
-                    let x = stk.remove(0);
-                    stk.push(x);
-                }
+                print!("You need at least two numbers in ");
+                println!("the stack to perform cyclic permutation operation.");
             }
-        } else {
-            print!("You need at least two numbers in ");
-            println!("the stack to perform cyclic permutation operation.");
         }
+        self.update_states();
     }
 
     fn del(&self) {
-        let mut stk = self.stack.borrow_mut();
-        if stk.len() > 0 {
-            stk.pop();
-        } else {
-            print!("You need at least one number ");
-            println!("in stack to perform delete operation.");
+        {
+            let mut stk = self.stack.borrow_mut();
+            if stk.len() > 0 {
+                stk.pop();
+            } else {
+                print!("You need at least one number ");
+                println!("in stack to perform delete operation.");
+            }
         }
+        self.update_states();
     }
 
     fn clear_stack(&self) {
-        let mut stk = self.stack.borrow_mut();
-        stk.clear();
+        {
+            let mut stk = self.stack.borrow_mut();
+            stk.clear();
+        }
+        self.update_states();
     }
 
     fn print_history(&self) {
@@ -273,7 +300,8 @@ impl Session {
 
     fn print_stack(&self) {
         println!("\nStack:");
-        for el in self.stack.borrow().iter() {
+        let stk = self.stack.borrow();
+        for el in stk.iter() {
             if ((el.abs() >= 1e6) || (el.abs() < 1e-3)) && (*el != 0.) {
                 println!("{:e}", el);
             } else {
@@ -282,7 +310,28 @@ impl Session {
         }
         //println!("\x1b[{}F", stk.len() as u32 + 3);
     }
-
+    
+    fn undo(&self, num: &i32) {
+        let mut stk = self.stack.borrow_mut();
+        let mut states = self.states.borrow_mut();
+        let mut undone = self.undone_states.borrow_mut();
+        if ((states.len() as i32)  > *num) && (*num >= 0) {
+            for _ in 0..(*num) {
+                let x = states.pop().unwrap();
+                undone.push(x);
+            }
+        } else if ((undone.len() as i32) >= -*num) && (*num < 0) { 
+            for _ in 0..(num.abs()) {
+                let x = undone.pop().unwrap();
+                states.push(x);
+            }
+        } else {
+            print!("You exceeded the number of operations");
+            println!(" to undo/redo.");
+        }
+        *stk = states[states.len() - 1].clone();
+    }
+    
     /*
     // add a way to save sessions
     pub fn save(&self) {
@@ -306,6 +355,7 @@ enum Token<'a> {
     RemoveSession(&'a str),
     History,
     ClearHistory,
+    Undo(i32),
     Quit,
 }
 
@@ -394,6 +444,17 @@ impl<'a> Token<'a> {
                 ["hist"] => Token::History,
                 // clear history of current session
                 ["hist_clear"] => Token::ClearHistory,
+                // undo
+                ["undo"] => Token::Undo(1),
+                ["redo"] => Token::Undo(-1),
+                ["undo", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Undo(num),
+                    Err(_) => Token::Invalid,
+                },
+                ["redo", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Undo(-num),
+                    Err(_) => Token::Invalid,
+                },
                 // everything else
                 _ => Token::Invalid,
             };
