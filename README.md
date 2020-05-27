@@ -21,8 +21,8 @@ so `cyc:-2` (negative sign reverses permutation).
 
 Any actions can be undone by using `undo` and redone by using `redo` if
  multiple undos or redos are required use syntax similar to the cyclic permutation 
- syntax, e.g. either `undo:2`, `redo:-2` for two undos in a row, or `redo:2`, 
- `undo:-2` for two redos in a row.
+ syntax, e.g. either `undo:2`, or `redo:-2` for two undos in a row, and `redo:2`, 
+  or `undo:-2` for two redos in a row.
 
 ## Manipulating Sessions
 New session can be create with the command `new:name_of_session` and can be moved to by `go_to:name_of_session` or `goto:name_of_session`.
