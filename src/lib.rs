@@ -79,13 +79,12 @@ impl SessionManager {
         io::stdin().read_line(&mut s).expect("Failed to read line");
 
         for tk in s.split_whitespace() {
+            self.push_to_history(tk.to_string());
             running = self.match_token(tk);
             if !running {
                 break;
             }
         }
-
-        self.push_to_history(s);
 
         running
     }
@@ -104,8 +103,9 @@ impl SessionManager {
             Token::NewSession(s) => self.add_new_session(s.to_string()),
             Token::ChangeSession(s) => self.change_current_session(s.to_string()),
             Token::RemoveSession(s) => self.remove_session(s),
+            Token::ResetSession => self.reset_session(),
             Token::PrintSessions => self.print_session_names(),
-            Token::History => self.print_history(),
+            Token::PrintHistory => self.print_history(),
             Token::ClearHistory => self.clear_history(),
             Token::Undo(num) => self.undo(&num),
             Token::Quit => running = false,
@@ -160,6 +160,7 @@ impl SessionManager {
     get_sess_method_mut!(del);
     get_sess_method_mut!(clear_stack);
     get_sess_method_mut!(undo; num: &i32);
+    get_sess_method_mut!(reset_session);
 }
 
 struct Session {
@@ -189,10 +190,7 @@ impl Session {
     }
     
     fn push_to_stack(&self, num: &f64) {
-        {
-            let mut stk = self.stack.borrow_mut();
-            stk.push(*num);
-        }
+        self.stack.borrow_mut().push(*num);
         self.update_states();
     }
 
@@ -201,6 +199,8 @@ impl Session {
     }
 
     fn op_binary(&self, bin_closure: &dyn Fn(f64, f64) -> f64) {
+        // scope to drop stk to avoid having a mutable 
+        // borrow while immutably borrowing
         {
             let mut stk = self.stack.borrow_mut();
             if stk.len() > 1 {
@@ -308,7 +308,9 @@ impl Session {
                 println!("{}", el);
             }
         }
-        //println!("\x1b[{}F", stk.len() as u32 + 3);
+        // This kind of works but is finicky with other prints
+        // print!("\x1B[2J");
+        // print!("\x1b[{}F", stk.len() as u32 + 4);
     }
     
     fn undo(&self, num: &i32) {
@@ -332,6 +334,15 @@ impl Session {
         *stk = states[states.len() - 1].clone();
     }
     
+    fn reset_session(&self) {
+        self.stack.borrow_mut().clear();
+        self.history.borrow_mut().clear();
+        self.undone_states.borrow_mut().clear();
+        let mut states = self.states.borrow_mut();
+        states.clear();
+        states.push(vec![]);
+    }
+    
     /*
     // add a way to save sessions
     pub fn save(&self) {
@@ -350,10 +361,11 @@ enum Token<'a> {
     CyclicPermutation(i32),
     Invalid,
     NewSession(&'a str),
-    ChangeSession(&'a str),
-    PrintSessions,
     RemoveSession(&'a str),
-    History,
+    ChangeSession(&'a str),
+    ResetSession,
+    PrintSessions,
+    PrintHistory,
     ClearHistory,
     Undo(i32),
     Quit,
@@ -438,10 +450,12 @@ impl<'a> Token<'a> {
                 ["goto", s] => Token::ChangeSession(s),
                 // remove a session
                 ["rm", s] => Token::RemoveSession(s),
+                // reset session
+                ["reset"] => Token::ResetSession,
                 // print sessions
                 ["sess"] => Token::PrintSessions,
                 // print history for current session
-                ["hist"] => Token::History,
+                ["hist"] => Token::PrintHistory,
                 // clear history of current session
                 ["hist_clear"] => Token::ClearHistory,
                 // undo
