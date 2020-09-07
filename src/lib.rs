@@ -419,8 +419,8 @@ impl<'a> Token<'a> {
                 ["pi"] => Token::Number(consts::PI),
                 ["e"] => Token::Number(consts::E),
                 ["c"] => Token::Number(299792458.), // m/s speed of light
-                ["h"] => Token::Number(6.6207015e-34), // Js
-                ["h_bar"] => Token::Number(6.6207004e-34 / (2. * consts::PI)), // Js
+                ["h"] => Token::Number(6.62607015e-34), // Js
+                ["h_bar"] => Token::Number(6.62607015e-34 / (2. * consts::PI)), // Js
                 // quiting
                 ["quit"] => Token::Quit,
                 ["exit"] => Token::Quit,
