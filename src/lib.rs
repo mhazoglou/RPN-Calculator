@@ -109,6 +109,7 @@ impl SessionManager {
             Token::ClearHistory => self.clear_history(),
             Token::Undo(num) => self.undo(&num),
             Token::Quit => running = false,
+            Token::Copy => self.copy(),
             Token::Invalid => println!("{} is an invalid input.", tk),
             _ => println!("What a beautiful Duwang!"),
         }
@@ -161,6 +162,7 @@ impl SessionManager {
     get_sess_method_mut!(clear_stack);
     get_sess_method_mut!(undo; num: &i32);
     get_sess_method_mut!(reset_session);
+    get_sess_method_mut!(copy);
 }
 
 struct Session {
@@ -343,6 +345,33 @@ impl Session {
         states.push(vec![]);
     }
     
+    fn copy(&self) {
+        // borrowing a mutable must be released to update states
+        {
+            let mut stk = self.stack.borrow_mut();
+            /* let len = stk.len();
+            if len > 0 {
+                let last = stk[len - 1].clone();
+                stk.push(last);
+            } else {
+                println!("Cannot copy the latest value if the stack is empty.")
+            } */
+            let opt_last_num = stk.last();
+            match opt_last_num {
+               Some(num) => {
+                   let val = num.clone();
+                   stk.push(val);
+               },
+               None      => {
+                   println!(
+                       "Cannot copy the latest value if the stack is empty."
+                   )
+               }
+            }
+        }
+        self.update_states();
+    }
+    
     /*
     // add a way to save sessions
     pub fn save(&self) {
@@ -368,6 +397,7 @@ enum Token<'a> {
     PrintHistory,
     ClearHistory,
     Undo(i32),
+    Copy,
     Quit,
 }
 
@@ -469,6 +499,9 @@ impl<'a> Token<'a> {
                     Ok(num) => Token::Undo(-num),
                     Err(_) => Token::Invalid,
                 },
+                // copy token
+                ["copy"] => Token::Copy,
+                ["cpy"] => Token::Copy,
                 // everything else
                 _ => Token::Invalid,
             };
