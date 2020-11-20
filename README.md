@@ -13,7 +13,9 @@ An example would be `4 5 +` resulting in 9.
 Unary operations can be entering the operation after the number you wish to perform 
 the operation on.
 Binary operations are performed on the previous two numbers entered on the stack.
-You can also remove the last number from the stack by using the operation `del`.
+You can also remove the last number from the stack by using the operation `del`, multiple values can be 
+deleted using `del:` followed by a number that doesn't exceed the stack size. If you want to delete all entries in the
+stack use `clear`.
 The last two numbers on the stack can be swapped using the `swap` command.
 The numbers can be cyclically permuted one using the command `cyc` or `cycle`, 
 or any integer multiple of cyclic permutations by specifying a signed integer like 

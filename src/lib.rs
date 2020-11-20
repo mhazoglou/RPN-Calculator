@@ -98,7 +98,7 @@ impl SessionManager {
             Token::OpUnary(un_closure) => self.op_unary(un_closure),
             Token::Swap => self.swap(),
             Token::CyclicPermutation(num) => self.cyclic_permutation(&num),
-            Token::Del => self.del(),
+            Token::Del(num) => self.del(&num),
             Token::ClearStack => self.clear_stack(),
             Token::NewSession(s) => self.add_new_session(s.to_string()),
             Token::ChangeSession(s) => self.change_current_session(s.to_string()),
@@ -109,7 +109,7 @@ impl SessionManager {
             Token::ClearHistory => self.clear_history(),
             Token::Undo(num) => self.undo(&num),
             Token::Quit => running = false,
-            Token::Copy => self.copy(),
+            Token::Copy(num) => self.copy(&num),
             Token::Invalid => println!("{} is an invalid input.", tk),
             _ => println!("What a beautiful Duwang!"),
         }
@@ -158,11 +158,11 @@ impl SessionManager {
     get_sess_method_mut!(op_unary; un_closure: &dyn Fn(f64) -> f64);
     get_sess_method_mut!(swap);
     get_sess_method_mut!(cyclic_permutation; num: &i32);
-    get_sess_method_mut!(del);
+    get_sess_method_mut!(del; num: &i32);
     get_sess_method_mut!(clear_stack);
     get_sess_method_mut!(undo; num: &i32);
     get_sess_method_mut!(reset_session);
-    get_sess_method_mut!(copy);
+    get_sess_method_mut!(copy; num: &i32);
 }
 
 struct Session {
@@ -268,14 +268,16 @@ impl Session {
         self.update_states();
     }
 
-    fn del(&self) {
+    fn del(&self, num: &i32) {
         {
             let mut stk = self.stack.borrow_mut();
-            if stk.len() > 0 {
-                stk.pop();
+            if stk.len() >= *num as usize {
+                for _ in 0..*num {
+                    stk.pop();
+                }
             } else {
-                print!("You need at least one number ");
-                println!("in stack to perform delete operation.");
+                print!("You cannot delete more numbers ");
+                println!("than what is inside the stack.");
             }
         }
         self.update_states();
@@ -345,22 +347,17 @@ impl Session {
         states.push(vec![]);
     }
     
-    fn copy(&self) {
+    fn copy(&self, num: &i32) {
         // borrowing a mutable must be released to update states
         {
             let mut stk = self.stack.borrow_mut();
-            /* let len = stk.len();
-            if len > 0 {
-                let last = stk[len - 1].clone();
-                stk.push(last);
-            } else {
-                println!("Cannot copy the latest value if the stack is empty.")
-            } */
             let opt_last_num = stk.last();
             match opt_last_num {
-               Some(num) => {
-                   let val = num.clone();
-                   stk.push(val);
+               Some(last_num) => {
+                   let val = last_num.clone();
+                   for _ in 0..*num {
+                       stk.push(val);
+                   }
                },
                None      => {
                    println!(
@@ -384,7 +381,7 @@ enum Token<'a> {
     Number(f64),
     OpBinary(&'a dyn Fn(f64, f64) -> f64),
     OpUnary(&'a dyn Fn(f64) -> f64),
-    Del,
+    Del(i32),
     ClearStack,
     Swap,
     CyclicPermutation(i32),
@@ -397,7 +394,7 @@ enum Token<'a> {
     PrintHistory,
     ClearHistory,
     Undo(i32),
-    Copy,
+    Copy(i32),
     Quit,
 }
 
@@ -455,8 +452,16 @@ impl<'a> Token<'a> {
                 ["quit"] => Token::Quit,
                 ["exit"] => Token::Quit,
                 // delete
-                ["delete"] => Token::Del,
-                ["del"] => Token::Del,
+                ["delete"] => Token::Del(1),
+                ["del"] => Token::Del(1),
+                ["delete", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Del(num),
+                    Err(_) => Token::Invalid,
+                },
+                ["del", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Del(num),
+                    Err(_) => Token::Invalid,
+                },
                 // clear all elements in current stack
                 ["clear"] => Token::ClearStack,
                 // swap
@@ -500,8 +505,16 @@ impl<'a> Token<'a> {
                     Err(_) => Token::Invalid,
                 },
                 // copy token
-                ["copy"] => Token::Copy,
-                ["cpy"] => Token::Copy,
+                ["copy"] => Token::Copy(1),
+                ["cpy"] => Token::Copy(1),
+                ["copy", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Copy(num),
+                    Err(_) => Token::Invalid,
+                },
+                ["cpy", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Copy(num),
+                    Err(_) => Token::Invalid,
+                },
                 // everything else
                 _ => Token::Invalid,
             };
