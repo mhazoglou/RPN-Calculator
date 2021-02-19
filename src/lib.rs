@@ -98,6 +98,8 @@ impl SessionManager {
             Token::OpUnary(un_closure) => self.op_unary(un_closure),
             Token::Swap => self.swap(),
             Token::CyclicPermutation(num) => self.cyclic_permutation(&num),
+            Token::Get(num) => self.get(&num),
+            Token::Insert(num, val) => self.insert(&num, &val),
             Token::Del(num) => self.del(&num),
             Token::ClearStack => self.clear_stack(),
             Token::NewSession(s) => self.add_new_session(s.to_string()),
@@ -163,6 +165,8 @@ impl SessionManager {
     get_sess_method_mut!(undo; num: &i32);
     get_sess_method_mut!(reset_session);
     get_sess_method_mut!(copy; num: &i32);
+    get_sess_method_mut!(get; num: &i32);
+    get_sess_method_mut!(insert; num: &i32, val: &f64);
 }
 
 struct Session {
@@ -369,6 +373,45 @@ impl Session {
         self.update_states();
     }
     
+    fn get(&self, num: &i32) {
+        // borrowing a mutable must be released to update states
+        {
+            let mut stk = self.stack.borrow_mut();
+            let length = stk.len() as i32;
+            if (length > *num) & (*num >= 0){
+                let val = stk.remove(*num as usize);
+                stk.push(val);
+            } else if length >= num.abs() {
+                let val = stk.remove((length + *num) as usize);
+                stk.push(val);
+            } else {
+                println!(
+                    "Value exceeds length of stack."
+                )
+            }
+            
+        }
+        self.update_states();
+    }
+    
+    fn insert(&self, num: &i32, val: &f64) {
+        // borrowing a mutable must be released to update states
+        {
+            let mut stk = self.stack.borrow_mut();
+            let length = stk.len() as i32;
+            if (length > *num) & (*num >= 0){
+                stk.insert(*num as usize, *val);
+            } else if length >= num.abs() {
+                stk.insert((length + *num) as usize, *val);
+            } else {
+                println!(
+                    "Value exceeds length of stack."
+                )
+            }
+        }
+        self.update_states();
+    }
+    
     /*
     // add a way to save sessions
     pub fn save(&self) {
@@ -385,6 +428,8 @@ enum Token<'a> {
     ClearStack,
     Swap,
     CyclicPermutation(i32),
+    Get(i32),
+    Insert(i32, f64),
     Invalid,
     NewSession(&'a str),
     RemoveSession(&'a str),
@@ -504,6 +549,17 @@ impl<'a> Token<'a> {
                     Ok(num) => Token::Undo(-num),
                     Err(_) => Token::Invalid,
                 },
+                // get token
+                ["get", s] => match s.parse::<i32>() {
+                    Ok(num) => Token::Get(num),
+                    Err(_) => Token::Invalid,
+                },
+                ["get"] => Token::Get(0),
+                // insert token
+                ["insert", s, v] => match (s.parse::<i32>(), v.parse::<f64>()) {
+                    (Ok(num), Ok(val)) => Token::Insert(num, val),
+                    _ => Token::Invalid,
+                }
                 // copy token
                 ["copy"] => Token::Copy(1),
                 ["cpy"] => Token::Copy(1),
