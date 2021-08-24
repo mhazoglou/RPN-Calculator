@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io;
-use std::{f64::consts, f64::NAN};
+use std::f64::consts;
 
 macro_rules! get_sess_method {
     ($method_name:ident) => {
@@ -445,12 +445,9 @@ enum Token<'a> {
 
 impl<'a> Token<'a> {
     pub fn new(s: &str) -> Token {
-        let x: f64 = match s.trim().parse() {
-            Ok(num) => num,
-            Err(_) => NAN,
-        };
-
-        if x.is_nan() {
+        if let Ok(num) = s.trim().parse() {
+            return Token::Number(num);
+        } else {
             return match s.trim().split(':').collect::<Vec<&str>>()[..] {
                 // Binary operations
                 ["+"] => Token::OpBinary(&|x, y| x + y),
@@ -574,8 +571,6 @@ impl<'a> Token<'a> {
                 // everything else
                 _ => Token::Invalid,
             };
-        } else {
-            return Token::Number(x);
-        }
+        } 
     }
 }

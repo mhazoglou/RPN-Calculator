@@ -19,7 +19,10 @@ stack use `clear`.
 The last two numbers on the stack can be swapped using the `swap` command.
 The numbers can be cyclically permuted one using the command `cyc` or `cycle`, 
 or any integer multiple of cyclic permutations by specifying a signed integer like 
-so `cyc:-2` (negative sign reverses permutation).
+so `cyc:-2` (negative sign reverses permutation). One can pull any number from anywhere in the stack to the bottom by using the `get:x` 
+where x is the index (counting starts from 0). To insert a number into a particular spot in the stack we can use `insert:idx:num` where 
+`idx` is the `idx` (can be any integer value with negatives allowed) and `num` is a floating point number.
+
 
 Any actions can be undone by using `undo` and redone by using `redo` if
  multiple undos or redos are required use syntax similar to the cyclic permutation 
